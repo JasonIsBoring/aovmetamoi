@@ -171,13 +171,14 @@
       padding: 28px 20px 60px;
     }
 
+    /* LƯU Ý QUAN TRỌNG: CSS Đã được sửa đổi để kết hợp tốt với JS */
     .page-section {
-      display: none;
-      animation: fadeIn 0.3s ease-in-out;
+      display: none; /* Mặc định ẩn tất cả các trang */
     }
 
     .page-section.active {
-      display: block;
+      display: block; /* Chỉ hiện trang có class active */
+      animation: fadeIn 0.3s ease-in-out;
     }
 
     @keyframes fadeIn {
@@ -1797,14 +1798,27 @@
       aiBattleMode: false
     };
 
+    // 1. HÀM CHUYỂN TRANG ĐÃ ĐƯỢC FIX LỖI 100%
     function switchPage(pageId) {
-      document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
-      document.getElementById('page-' + pageId).classList.add('active');
+      // Ẩn tất cả các trang
+      document.querySelectorAll('.page-section').forEach(sec => {
+        sec.classList.remove('active');
+        sec.style.display = 'none'; // Ép ẩn bằng JavaScript
+      });
 
+      // Hiện trang đích
+      const targetPage = document.getElementById('page-' + pageId);
+      if (targetPage) {
+        targetPage.style.display = 'block'; // Ép hiện bằng JavaScript
+        targetPage.classList.add('active');
+      }
+
+      // Đổi class active cho nút bấm menu
       document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.page === pageId);
       });
 
+      // Thu gọn menu trên mobile
       document.getElementById('navLinks').classList.remove('mobile-open');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -1813,6 +1827,7 @@
       document.getElementById('navLinks').classList.toggle('mobile-open');
     }
 
+    // 2. KHỞI TẠO PHÒNG CẤM CHỌN (DRAFT SIMULATOR)
     function renderDraftBoard() {
       renderTeamSlots('enemy', 'enemyPickSlots', 'enemyBanSlots', 'enemyCount');
       renderTeamSlots('ally', 'allyPickSlots', 'allyBanSlots', 'allyCount');
@@ -1833,17 +1848,17 @@
         const isTarget = draftState.activeTarget.team === team && draftState.activeTarget.type === 'pick' && draftState.activeTarget.index === idx;
         return `
           <div class="draft-slot \${isTarget ? 'active-target' : ''}"
-               onclick="selectSlotTarget('${team}', 'pick',${idx})"
+               onclick="selectSlotTarget('${team}', 'pick', ${idx})"
                ondragover="event.preventDefault()"
-               ondrop="handleDropHero(event, '${team}', 'pick',${idx})">
+               ondrop="handleDropHero(event, '${team}', 'pick', ${idx})">
             \${hero ? `
               <button class="slot-remove-btn" onclick="removeHeroFromSlot(event, '${team}', 'pick', ${idx})" title="Xóa">✕</button>
-              <div class="slot-hero-avatar" style="background:${hero.color}" onclick="openHeroModal('${hero.id}'); event.stopPropagation();">${hero.name.slice(0,2)}</div>
-              <div class="slot-hero-name">${hero.name}</div>
-              <div class="slot-role-label">${hero.role} (${hero.tier})</div>
+              <div class="slot-hero-avatar" style="background:\${hero.color}" onclick="openHeroModal('\${hero.id}'); event.stopPropagation();">\${hero.name.slice(0,2)}</div>
+              <div class="slot-hero-name">\${hero.name}</div>
+              <div class="slot-role-label">\${hero.role} (\${hero.tier})</div>
             ` : `
               <div class="plus-circle">+</div>
-              <div class="slot-role-label">${ROLE_SLOTS[idx]}</div>
+              <div class="slot-role-label">\${ROLE_SLOTS[idx]}</div>
             `}
           </div>
         `;
@@ -1854,10 +1869,10 @@
         const hero = HEROES.find(h => h.id === heroId);
         const isTarget = draftState.activeTarget.team === team && draftState.activeTarget.type === 'ban' && draftState.activeTarget.index === idx;
         return `
-          <div class="ban-slot ${hero ? 'filled' : ''} ${isTarget ? 'active-target' : ''}"
-               onclick="selectSlotTarget('${team}', 'ban',${idx})"
+          <div class="ban-slot \${hero ? 'filled' : ''} \${isTarget ? 'active-target' : ''}"
+               onclick="selectSlotTarget('${team}', 'ban', ${idx})"
                ondragover="event.preventDefault()"
-               ondrop="handleDropHero(event, '${team}', 'ban',${idx})"
+               ondrop="handleDropHero(event, '${team}', 'ban', ${idx})"
                title="\${hero ? 'Đã cấm: ' + hero.name : 'Ô cấm ' + (idx + 1)}">
             \${hero ? hero.name.slice(0,3) : 'BAN'}
           </div>
@@ -1905,8 +1920,8 @@
                draggable="\${!used}"
                ondragstart="handleDragStart(event, '\${hero.id}')"
                onclick="assignHeroToActiveSlot('\${hero.id}')">
-            <div class="pill-avatar" style="background: ${hero.color}">${hero.name.slice(0,2)}</div>
-            <span class="pill-name">${hero.name}${hero.trend ? `<small style="color:var(--accent-gold)">${hero.trend}</small>` : ''}</span>
+            <div class="pill-avatar" style="background: \${hero.color}">\${hero.name.slice(0,2)}</div>
+            <span class="pill-name">\${hero.name} \${hero.trend ? `<small style="color:var(--accent-gold)">\${hero.trend}</small>` : ''}</span>
             <span class="pill-tier">\${hero.tier}</span>
           </div>
         `;
@@ -1971,7 +1986,7 @@
         draftState.activeTarget = { team: 'ally', type: 'pick', index: draftState.allyPicks.findIndex(x => x === null) !== -1 ? draftState.allyPicks.findIndex(x => x === null) : 0 };
         renderDraftBoard();
       } else {
-        commentBox.innerHTML = `💡 <strong>Chế độ Tự Do:</strong> Bạn có thể tự do thêm tướng vào cả 2 đội để kiểm tra kèo khắc chế.`;
+        commentBox.innerHTML = `💡 <strong>Chế độ Tự Do:</strong> Bạn có thể tự do thêm tướng vào cả 2 đội để kiểm tra kèo khắc chế bản 1.64.`;
       }
     }
 
@@ -1980,13 +1995,25 @@
       const commentBox = document.getElementById('aiLiveComment');
       if (type === 'ban') {
         if (hero.tier === 'S+' || hero.tier === 'S') {
-          commentBox.innerHTML = `🚫 <strong>Lượt Cấm CHUẨN (\${hero.name} - Tier ${hero.tier}):</strong> Rất chính xác! ${hero.name} thuộc nhóm "First-pick or Ban" dễ kiểm soát 3 Quái Boss ở bản Vết Nứt Thời Không.`;
+          commentBox.innerHTML = `🚫 <strong>Lượt Cấm CHUẨN (\${hero.name} - Tier \${hero.tier}):</strong> Rất chính xác! \${hero.name} thuộc nhóm "First-pick or Ban" dễ kiểm soát 3 Quái Boss ở bản Vết Nứt Thời Không.`;
         } else {
-          commentBox.innerHTML = `⚠️ <strong>Nhận xét Lượt Cấm (\${hero.name} - Tier ${hero.tier}):</strong> Hơi lãng phí lượt cấm! Bạn nên ưu tiên cấm nhóm S+ như <em>Keera, TeeMee, Lorion, Florentino, Thane, Hayate</em> hơn nhé.`; } return; }  if (team === 'ally') { const enemyHeroes = draftState.enemyPicks.filter(Boolean).map(id => HEROES.find(h => h.id === id)); const counteredEnemies = enemyHeroes.filter(eh => hero.counters.includes(eh.id));  if (counteredEnemies.length > 0) { commentBox.innerHTML = `✅ <strong>Nhận xét AI (Lượt chọn KHẮC CHẾ):</strong> Tuyệt vời! <strong>${hero.name} (Tier ${hero.tier})</strong> khắc chế trực tiếp <strong>${counteredEnemies.map(e => e.name).join(', ')}</strong> bên đội địch!`;
+          commentBox.innerHTML = `⚠️ <strong>Nhận xét Lượt Cấm (\${hero.name} - Tier \${hero.tier}):</strong> Hơi lãng phí lượt cấm! Bạn nên ưu tiên cấm nhóm S+ như <em>Keera, TeeMee, Lorion, Florentino, Thane, Hayate</em> hơn nhé.`;
+        }
+        return;
+      }
+
+      if (team === 'ally') {
+        const enemyHeroes = draftState.enemyPicks.filter(Boolean).map(id => HEROES.find(h => h.id === id));
+        const counteredEnemies = enemyHeroes.filter(eh => hero.counters.includes(eh.id));
+
+        if (counteredEnemies.length > 0) {
+          commentBox.innerHTML = `✅ <strong>Nhận xét AI (Lượt chọn KHẮC CHẾ):</strong> Tuyệt vời! <strong>\${hero.name} (Tier \${hero.tier})</strong> khắc chế trực tiếp <strong>\${counteredEnemies.map(e => e.name).join(', ')}</strong> bên đội địch!`;
         } else if (hero.tier === 'S+') {
-          commentBox.innerHTML = `🔥 <strong>Nhận xét AI (Lượt chọn S+):</strong> Quá đỉnh! Bạn vừa khóa được <strong>${hero.name}</strong> — tướng Bậc S+ thống trị chiến trường Vết Nứt Thời Không!`; } else if (hero.tier === 'C') { commentBox.innerHTML = `⚠️ <strong>Cảnh báo AI (Lượt chọn Mạo Hiểm):</strong> <strong>${hero.name}</strong> hiện đang ở <strong>Bậc C (Off-meta)</strong> trong xếp hạng đơn. Hãy cẩn thận vì rất dễ bị đối phương trừng phạt!`;
+          commentBox.innerHTML = `🔥 <strong>Nhận xét AI (Lượt chọn S+):</strong> Quá đỉnh! Bạn vừa khóa được <strong>\${hero.name}</strong> — tướng Bậc S+ thống trị chiến trường Vết Nứt Thời Không!`;
+        } else if (hero.tier === 'C') {
+          commentBox.innerHTML = `⚠️ <strong>Cảnh báo AI (Lượt chọn Mạo Hiểm):</strong> <strong>\${hero.name}</strong> hiện đang ở <strong>Bậc C (Off-meta)</strong> trong xếp hạng đơn. Hãy cẩn thận vì rất dễ bị đối phương trừng phạt!`;
         } else {
-          commentBox.innerHTML = `✨ <strong>Nhận xét AI:</strong> Bạn vừa chọn <strong>${hero.name} (${hero.role} - Tier ${hero.tier})</strong>. Ngưỡng sức mạnh: <em>${hero.powerSpike}</em>.`;
+          commentBox.innerHTML = `✨ <strong>Nhận xét AI:</strong> Bạn vừa chọn <strong>\${hero.name} (\${hero.role} - Tier \${hero.tier})</strong>. Ngưỡng sức mạnh: <em>\${hero.powerSpike}</em>.`;
         }
       }
     }
@@ -2004,7 +2031,7 @@
                 || available[0];
 
       draftState.enemyPicks[emptyEnemyPickIdx] = aiPick.id;
-      document.getElementById('aiLiveComment').innerHTML += `<br/>🤖 <strong>AI Đội Địch phản đòn:</strong> Máy vừa khóa vào <strong>${aiPick.name} (Tier${aiPick.tier})</strong>!`;
+      document.getElementById('aiLiveComment').innerHTML += `<br/>🤖 <strong>AI Đội Địch phản đòn:</strong> Máy vừa khóa vào <strong>\${aiPick.name} (Tier \${aiPick.tier})</strong>!`;
       renderDraftBoard();
     }
 
@@ -2026,7 +2053,7 @@
             const targets = enemyIds.filter(eid => h.counters.includes(eid)).map(eid => HEROES.find(x => x.id === eid).name);
             return `
               <div class="suggestion-chip" onclick="assignHeroToActiveSlot('\${h.id}')">
-                <strong>⚔️ ${h.name} (Tier${h.tier})</strong>
+                <strong>⚔️ \${h.name} (Tier \${h.tier})</strong>
                 <span style="font-size:12px; color:var(--text-muted);">Khắc chế: \${targets.join(', ')}</span>
               </div>
             `;
@@ -2047,7 +2074,7 @@
         } else {
           synergyBox.innerHTML = synergyCandidates.map(h => `
             <div class="suggestion-chip" onclick="assignHeroToActiveSlot('\${h.id}')">
-              <strong>🤝 ${h.name} (Tier${h.tier})</strong>
+              <strong>🤝 \${h.name} (Tier \${h.tier})</strong>
               <span style="font-size:12px; color:var(--text-muted);">Combo tương sinh chuẩn Meta</span>
             </div>
           `).join('');
@@ -2168,14 +2195,14 @@
                 const bgColor = detailHero ? detailHero.color : '#3d5a80';
                 const trendClass = h.trend === '▲' ? 'trend-up' : (h.trend === '▼' ? 'trend-down' : 'trend-adj');
                 return `
-                  <div class="hero-card-mini" onclick="openHeroModalByName('${h.name.replace(/'/g, "\\'")}', '${h.role}', '${t.key}', '${h.trend || ''}')">
-                    ${h.trend ? `<span class="trend-tag ${trendClass}">${h.trend}</span>` : ''}
-                    <div class="slot-hero-avatar" style="background:${bgColor}; margin: 0 auto 6px;">${h.name.slice(0,2)}</div>
-                    <div style="font-weight:bold; font-size:13px;">${h.name}</div>
-                    <div style="font-size:11px; color:var(--text-muted);">${h.role}</div>
+                  <div class="hero-card-mini" onclick="openHeroModalByName('\${h.name.replace(/'/g, "\\'")}', '\${h.role}', '\${t.key}', '\${h.trend || ''}')">
+                    \${h.trend ? `<span class="trend-tag \${trendClass}">\${h.trend}</span>` : ''}
+                    <div class="slot-hero-avatar" style="background:\${bgColor}; margin: 0 auto 6px;">\${h.name.slice(0,2)}</div>
+                    <div style="font-weight:bold; font-size:13px;">\${h.name}</div>
+                    <div style="font-size:11px; color:var(--text-muted);">\${h.role}</div>
                   </div>
                 `;
-              }).join('') : `<span style="color:var(--text-muted); font-size:14px;">Không có tướng phù hợp ở bậc ${t.key}.</span>`}
+              }).join('') : `<span style="color:var(--text-muted); font-size:14px;">Không có tướng phù hợp ở bậc \${t.key}.</span>`}
             </div>
           </div>
         `;
@@ -2194,21 +2221,21 @@
       const dmg = hero ? hero.dmg : (role === 'Mage' || role === 'Support' ? 'AP' : 'AD');
       const cc = hero ? hero.cc : 'Theo bộ kỹ năng đặc trưng';
       const spike = hero ? hero.powerSpike : 'Giữa & Cuối trận';
-      const desc = hero ? hero.skillDesc : `Vị tướng vai trò ${role} xếp hạng Bậc ${tier} trên bảng xếp hạng ROVMETA.`;
+      const desc = hero ? hero.skillDesc : `Vị tướng vai trò \${role} xếp hạng Bậc \${tier} trên bảng xếp hạng ROVMETA.`;
 
       document.getElementById('heroModalBody').innerHTML = `
         <div style="display:flex; align-items:center; gap:16px; margin-bottom:18px;">
-          <div class="slot-hero-avatar" style="width:68px; height:68px; font-size:24px; background:${bgColor};">${name.slice(0,2)}</div>
+          <div class="slot-hero-avatar" style="width:68px; height:68px; font-size:24px; background:\${bgColor};">\${name.slice(0,2)}</div>
           <div>
-            <span class="badge-patch">TIER \${tier} ${trend ? '• XU HƯỚNG ' + trend : ''} • ${role.toUpperCase()}</span>
+            <span class="badge-patch">TIER \${tier} \${trend ? '• XU HƯỚNG ' + trend : ''} • \${role.toUpperCase()}</span>
             <h2 style="font-size:32px;">\${name}</h2>
           </div>
         </div>
-        <p style="margin-bottom:12px;"><strong>📍 Vai trò chuẩn ROVMETA:</strong> ${role} \vert{} <strong>Loại sát thương:</strong> ${dmg}</p>
+        <p style="margin-bottom:12px;"><strong>📍 Vai trò chuẩn ROVMETA:</strong> \${role} | <strong>Loại sát thương:</strong> \${dmg}</p>
         <p style="margin-bottom:12px;"><strong>⚡ Hiệu ứng & Cơ chế:</strong> \${cc} | <strong>Ngưỡng sức mạnh:</strong> <span style="color:var(--accent-gold);">\${spike}</span></p>
         <p style="margin-bottom:18px; color:var(--text-muted);"><strong>📖 Phân tích Meta:</strong> \${desc}</p>
         <div style="display:flex; gap:12px; flex-wrap:wrap;">
-          \${hero ? `<button class="btn-gold" onclick="closeHeroModal(); switchPage('draft'); assignHeroToActiveSlot('${hero.id}');">⚔️ ĐƯA VÀO PHÒNG CẤM CHỌN</button>` : ''}
+          \${hero ? `<button class="btn-gold" onclick="closeHeroModal(); switchPage('draft'); assignHeroToActiveSlot('\${hero.id}');">⚔️ ĐƯA VÀO PHÒNG CẤM CHỌN</button>` : ''}
           <button class="btn-outline" onclick="closeHeroModal(); switchPage('effects');">⚡ TRA CỨU TỪ ĐIỂN HIỆU ỨNG</button>
         </div>
       `;
@@ -2451,14 +2478,24 @@
             <p style="font-size:14px; color:var(--text-muted); margin-bottom:8px;">\${item.desc}</p>
             <p style="font-size:13px; color:var(--text-primary);"><strong>🎯 Ví dụ tiêu biểu:</strong> \${item.examples}</p>
             <div class="effect-tags">
-              \${item.tags.map(t => `<span class="meta-tag ${t.type}">${t.text}</span>`).join('')}
+              \${item.tags.map(t => `<span class="meta-tag \${t.type}">\${t.text}</span>`).join('')}
             </div>
           </div>
         </div>
       `).join('');
     }
 
+    // KHI TẢI TRANG, HIỂN THỊ ĐÚNG TRANG CHỦ VÀ ẨN CÁC TRANG CÒN LẠI
     window.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('.page-section').forEach(sec => {
+        sec.style.display = 'none';
+      });
+      const homeSec = document.getElementById('page-home');
+      if (homeSec) {
+        homeSec.style.display = 'block';
+        homeSec.classList.add('active');
+      }
+      
       renderDraftBoard();
       renderTierList();
       switchEffectTab('buff');
