@@ -171,14 +171,13 @@
       padding: 28px 20px 60px;
     }
 
-    /* LƯU Ý QUAN TRỌNG: CSS Đã được sửa đổi để kết hợp tốt với JS */
     .page-section {
-      display: none; /* Mặc định ẩn tất cả các trang */
+      display: none;
+      animation: fadeIn 0.3s ease-in-out;
     }
 
     .page-section.active {
-      display: block; /* Chỉ hiện trang có class active */
-      animation: fadeIn 0.3s ease-in-out;
+      display: block;
     }
 
     @keyframes fadeIn {
@@ -1266,7 +1265,7 @@
         </div>
       </div>
 
-      <!-- Khối Tìm Hiểu Thêm (4 thẻ ngang theo Wireframe) -->
+      <!-- Khối Tìm Hiểu Thêm -->
       <h2 class="section-title">🧭 TÌM HIỂU <span>THÊM</span></h2>
       <div class="explore-grid">
         <div class="glass-panel explore-card">
@@ -1363,7 +1362,7 @@
     </section>
 
     <!-- ==========================================================
-         TRANG 3: TỪ ĐIỂN HIỆU ỨNG (CẬP NHẬT TỪ VIDEO KHÁNH HY)
+         TRANG 3: TỪ ĐIỂN HIỆU ỨNG 
          ========================================================== -->
     <section id="page-effects" class="page-section">
       <div class="glass-panel gold-border" style="padding: 20px 24px; margin-bottom: 24px;">
@@ -1798,24 +1797,30 @@
       aiBattleMode: false
     };
 
-    // 1. HÀM CHUYỂN TRANG ĐÃ ĐƯỢC FIX LỖI 100%
+    // =====================================
+    // 1. HÀM CHUYỂN TRANG ĐÃ ĐƯỢC FIX LỖI
+    // =====================================
     function switchPage(pageId) {
       // Ẩn tất cả các trang
       document.querySelectorAll('.page-section').forEach(sec => {
         sec.classList.remove('active');
-        sec.style.display = 'none'; // Ép ẩn bằng JavaScript
+        sec.style.display = 'none'; 
       });
 
       // Hiện trang đích
       const targetPage = document.getElementById('page-' + pageId);
       if (targetPage) {
-        targetPage.style.display = 'block'; // Ép hiện bằng JavaScript
+        targetPage.style.display = 'block'; 
         targetPage.classList.add('active');
       }
 
       // Đổi class active cho nút bấm menu
       document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.page === pageId);
+        if (btn.dataset.page === pageId) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
       });
 
       // Thu gọn menu trên mobile
@@ -1827,7 +1832,9 @@
       document.getElementById('navLinks').classList.toggle('mobile-open');
     }
 
-    // 2. KHỞI TẠO PHÒNG CẤM CHỌN (DRAFT SIMULATOR)
+    // =====================================
+    // 2. KHỞI TẠO PHÒNG CẤM CHỌN (DRAFT)
+    // =====================================
     function renderDraftBoard() {
       renderTeamSlots('enemy', 'enemyPickSlots', 'enemyBanSlots', 'enemyCount');
       renderTeamSlots('ally', 'allyPickSlots', 'allyBanSlots', 'allyCount');
@@ -1840,26 +1847,34 @@
       const bans = team === 'enemy' ? draftState.enemyBans : draftState.allyBans;
 
       const filledCount = picks.filter(Boolean).length;
-      document.getElementById(countId).textContent = `\${filledCount}/5`;
+      document.getElementById(countId).textContent = `${filledCount}/5`;
 
       const pickContainer = document.getElementById(pickContainerId);
       pickContainer.innerHTML = picks.map((heroId, idx) => {
         const hero = HEROES.find(h => h.id === heroId);
         const isTarget = draftState.activeTarget.team === team && draftState.activeTarget.type === 'pick' && draftState.activeTarget.index === idx;
+        
+        let slotContent = '';
+        if (hero) {
+          slotContent = `
+            <button class="slot-remove-btn" onclick="removeHeroFromSlot(event, '${team}', 'pick', ${idx})" title="Xóa">✕</button>
+            <div class="slot-hero-avatar" style="background:${hero.color}" onclick="openHeroModal('${hero.id}'); event.stopPropagation();">${hero.name.slice(0,2)}</div>
+            <div class="slot-hero-name">${hero.name}</div>
+            <div class="slot-role-label">${hero.role} (${hero.tier})</div>
+          `;
+        } else {
+          slotContent = `
+            <div class="plus-circle">+</div>
+            <div class="slot-role-label">${ROLE_SLOTS[idx]}</div>
+          `;
+        }
+        
         return `
-          <div class="draft-slot \${isTarget ? 'active-target' : ''}"
+          <div class="draft-slot ${isTarget ? 'active-target' : ''}"
                onclick="selectSlotTarget('${team}', 'pick', ${idx})"
                ondragover="event.preventDefault()"
                ondrop="handleDropHero(event, '${team}', 'pick', ${idx})">
-            \${hero ? `
-              <button class="slot-remove-btn" onclick="removeHeroFromSlot(event, '${team}', 'pick', ${idx})" title="Xóa">✕</button>
-              <div class="slot-hero-avatar" style="background:\${hero.color}" onclick="openHeroModal('\${hero.id}'); event.stopPropagation();">\${hero.name.slice(0,2)}</div>
-              <div class="slot-hero-name">\${hero.name}</div>
-              <div class="slot-role-label">\${hero.role} (\${hero.tier})</div>
-            ` : `
-              <div class="plus-circle">+</div>
-              <div class="slot-role-label">\${ROLE_SLOTS[idx]}</div>
-            `}
+            ${slotContent}
           </div>
         `;
       }).join('');
@@ -1869,12 +1884,12 @@
         const hero = HEROES.find(h => h.id === heroId);
         const isTarget = draftState.activeTarget.team === team && draftState.activeTarget.type === 'ban' && draftState.activeTarget.index === idx;
         return `
-          <div class="ban-slot \${hero ? 'filled' : ''} \${isTarget ? 'active-target' : ''}"
+          <div class="ban-slot ${hero ? 'filled' : ''} ${isTarget ? 'active-target' : ''}"
                onclick="selectSlotTarget('${team}', 'ban', ${idx})"
                ondragover="event.preventDefault()"
                ondrop="handleDropHero(event, '${team}', 'ban', ${idx})"
-               title="\${hero ? 'Đã cấm: ' + hero.name : 'Ô cấm ' + (idx + 1)}">
-            \${hero ? hero.name.slice(0,3) : 'BAN'}
+               title="${hero ? 'Đã cấm: ' + hero.name : 'Ô cấm ' + (idx + 1)}">
+            ${hero ? hero.name.slice(0,3) : 'BAN'}
           </div>
         `;
       }).join('');
@@ -1915,14 +1930,15 @@
 
       container.innerHTML = filtered.map(hero => {
         const used = isHeroUsed(hero.id);
+        const trendHTML = hero.trend ? `<small style="color:var(--accent-gold)">${hero.trend}</small>` : '';
         return `
-          <div class="hero-pill \${used ? 'disabled' : ''}"
-               draggable="\${!used}"
-               ondragstart="handleDragStart(event, '\${hero.id}')"
-               onclick="assignHeroToActiveSlot('\${hero.id}')">
-            <div class="pill-avatar" style="background: \${hero.color}">\${hero.name.slice(0,2)}</div>
-            <span class="pill-name">\${hero.name} \${hero.trend ? `<small style="color:var(--accent-gold)">\${hero.trend}</small>` : ''}</span>
-            <span class="pill-tier">\${hero.tier}</span>
+          <div class="hero-pill ${used ? 'disabled' : ''}"
+               draggable="${!used}"
+               ondragstart="handleDragStart(event, '${hero.id}')"
+               onclick="assignHeroToActiveSlot('${hero.id}')">
+            <div class="pill-avatar" style="background: ${hero.color}">${hero.name.slice(0,2)}</div>
+            <span class="pill-name">${hero.name} ${trendHTML}</span>
+            <span class="pill-tier">${hero.tier}</span>
           </div>
         `;
       }).join('');
@@ -1983,7 +1999,8 @@
       const commentBox = document.getElementById('aiLiveComment');
       if (draftState.aiBattleMode) {
         commentBox.innerHTML = `⚔️ <strong>Chế độ Thách Đấu Cùng AI ĐÃ BẬT:</strong> Hãy chọn tướng cho <strong>YOUR TEAM</strong>, AI sẽ ưu tiên cướp tướng S+/S hoặc chọn tướng khắc chế bên <strong>ENEMY TEAM</strong>!`;
-        draftState.activeTarget = { team: 'ally', type: 'pick', index: draftState.allyPicks.findIndex(x => x === null) !== -1 ? draftState.allyPicks.findIndex(x => x === null) : 0 };
+        const nextAllyIdx = draftState.allyPicks.findIndex(x => x === null);
+        draftState.activeTarget = { team: 'ally', type: 'pick', index: nextAllyIdx !== -1 ? nextAllyIdx : 0 };
         renderDraftBoard();
       } else {
         commentBox.innerHTML = `💡 <strong>Chế độ Tự Do:</strong> Bạn có thể tự do thêm tướng vào cả 2 đội để kiểm tra kèo khắc chế bản 1.64.`;
@@ -1995,9 +2012,9 @@
       const commentBox = document.getElementById('aiLiveComment');
       if (type === 'ban') {
         if (hero.tier === 'S+' || hero.tier === 'S') {
-          commentBox.innerHTML = `🚫 <strong>Lượt Cấm CHUẨN (\${hero.name} - Tier \${hero.tier}):</strong> Rất chính xác! \${hero.name} thuộc nhóm "First-pick or Ban" dễ kiểm soát 3 Quái Boss ở bản Vết Nứt Thời Không.`;
+          commentBox.innerHTML = `🚫 <strong>Lượt Cấm CHUẨN (${hero.name} - Tier ${hero.tier}):</strong> Rất chính xác! ${hero.name} thuộc nhóm "First-pick or Ban" dễ kiểm soát 3 Quái Boss ở bản Vết Nứt Thời Không.`;
         } else {
-          commentBox.innerHTML = `⚠️ <strong>Nhận xét Lượt Cấm (\${hero.name} - Tier \${hero.tier}):</strong> Hơi lãng phí lượt cấm! Bạn nên ưu tiên cấm nhóm S+ như <em>Keera, TeeMee, Lorion, Florentino, Thane, Hayate</em> hơn nhé.`;
+          commentBox.innerHTML = `⚠️ <strong>Nhận xét Lượt Cấm (${hero.name} - Tier ${hero.tier}):</strong> Hơi lãng phí lượt cấm! Bạn nên ưu tiên cấm nhóm S+ như <em>Keera, TeeMee, Lorion, Florentino, Thane, Hayate</em> hơn nhé.`;
         }
         return;
       }
@@ -2007,13 +2024,13 @@
         const counteredEnemies = enemyHeroes.filter(eh => hero.counters.includes(eh.id));
 
         if (counteredEnemies.length > 0) {
-          commentBox.innerHTML = `✅ <strong>Nhận xét AI (Lượt chọn KHẮC CHẾ):</strong> Tuyệt vời! <strong>\${hero.name} (Tier \${hero.tier})</strong> khắc chế trực tiếp <strong>\${counteredEnemies.map(e => e.name).join(', ')}</strong> bên đội địch!`;
+          commentBox.innerHTML = `✅ <strong>Nhận xét AI (Lượt chọn KHẮC CHẾ):</strong> Tuyệt vời! <strong>${hero.name} (Tier ${hero.tier})</strong> khắc chế trực tiếp <strong>${counteredEnemies.map(e => e.name).join(', ')}</strong> bên đội địch!`;
         } else if (hero.tier === 'S+') {
-          commentBox.innerHTML = `🔥 <strong>Nhận xét AI (Lượt chọn S+):</strong> Quá đỉnh! Bạn vừa khóa được <strong>\${hero.name}</strong> — tướng Bậc S+ thống trị chiến trường Vết Nứt Thời Không!`;
+          commentBox.innerHTML = `🔥 <strong>Nhận xét AI (Lượt chọn S+):</strong> Quá đỉnh! Bạn vừa khóa được <strong>${hero.name}</strong> — tướng Bậc S+ thống trị chiến trường Vết Nứt Thời Không!`;
         } else if (hero.tier === 'C') {
-          commentBox.innerHTML = `⚠️ <strong>Cảnh báo AI (Lượt chọn Mạo Hiểm):</strong> <strong>\${hero.name}</strong> hiện đang ở <strong>Bậc C (Off-meta)</strong> trong xếp hạng đơn. Hãy cẩn thận vì rất dễ bị đối phương trừng phạt!`;
+          commentBox.innerHTML = `⚠️ <strong>Cảnh báo AI (Lượt chọn Mạo Hiểm):</strong> <strong>${hero.name}</strong> hiện đang ở <strong>Bậc C (Off-meta)</strong> trong xếp hạng đơn. Hãy cẩn thận vì rất dễ bị đối phương trừng phạt!`;
         } else {
-          commentBox.innerHTML = `✨ <strong>Nhận xét AI:</strong> Bạn vừa chọn <strong>\${hero.name} (\${hero.role} - Tier \${hero.tier})</strong>. Ngưỡng sức mạnh: <em>\${hero.powerSpike}</em>.`;
+          commentBox.innerHTML = `✨ <strong>Nhận xét AI:</strong> Bạn vừa chọn <strong>${hero.name} (${hero.role} - Tier ${hero.tier})</strong>. Ngưỡng sức mạnh: <em>${hero.powerSpike}</em>.`;
         }
       }
     }
@@ -2031,7 +2048,7 @@
                 || available[0];
 
       draftState.enemyPicks[emptyEnemyPickIdx] = aiPick.id;
-      document.getElementById('aiLiveComment').innerHTML += `<br/>🤖 <strong>AI Đội Địch phản đòn:</strong> Máy vừa khóa vào <strong>\${aiPick.name} (Tier \${aiPick.tier})</strong>!`;
+      document.getElementById('aiLiveComment').innerHTML += `<br/>🤖 <strong>AI Đội Địch phản đòn:</strong> Máy vừa khóa vào <strong>${aiPick.name} (Tier ${aiPick.tier})</strong>!`;
       renderDraftBoard();
     }
 
@@ -2052,9 +2069,9 @@
           counterBox.innerHTML = counterCandidates.map(h => {
             const targets = enemyIds.filter(eid => h.counters.includes(eid)).map(eid => HEROES.find(x => x.id === eid).name);
             return `
-              <div class="suggestion-chip" onclick="assignHeroToActiveSlot('\${h.id}')">
-                <strong>⚔️ \${h.name} (Tier \${h.tier})</strong>
-                <span style="font-size:12px; color:var(--text-muted);">Khắc chế: \${targets.join(', ')}</span>
+              <div class="suggestion-chip" onclick="assignHeroToActiveSlot('${h.id}')">
+                <strong>⚔️ ${h.name} (Tier ${h.tier})</strong>
+                <span style="font-size:12px; color:var(--text-muted);">Khắc chế: ${targets.join(', ')}</span>
               </div>
             `;
           }).join('');
@@ -2073,8 +2090,8 @@
           synergyBox.innerHTML = `<span class="suggestion-empty">Gợi ý phối hợp tốt mọi đội hình: TeeMee (S+), Thane (S+), Aya (S), Zip (S).</span>`;
         } else {
           synergyBox.innerHTML = synergyCandidates.map(h => `
-            <div class="suggestion-chip" onclick="assignHeroToActiveSlot('\${h.id}')">
-              <strong>🤝 \${h.name} (Tier \${h.tier})</strong>
+            <div class="suggestion-chip" onclick="assignHeroToActiveSlot('${h.id}')">
+              <strong>🤝 ${h.name} (Tier ${h.tier})</strong>
               <span style="font-size:12px; color:var(--text-muted);">Combo tương sinh chuẩn Meta</span>
             </div>
           `).join('');
@@ -2105,12 +2122,12 @@
       const cTierHeroes = allyHeroes.filter(h => h.tier === 'C');
 
       if (sPlusHeroes.length > 0) {
-        warnings.push(`🔥 <strong>Sở hữu Tướng S+ (\${sPlusHeroes.map(h => h.name).join(', ')}):</strong> Đội hình có lợi thế cực lớn khi tranh chấp Caesar tiên phong và 3 Quái Boss phút 15.`);
+        warnings.push(`🔥 <strong>Sở hữu Tướng S+ (${sPlusHeroes.map(h => h.name).join(', ')}):</strong> Đội hình có lợi thế cực lớn khi tranh chấp Caesar tiên phong và 3 Quái Boss phút 15.`);
       }
 
       if (cTierHeroes.length > 0) {
         baseScore -= cTierHeroes.length * 5;
-        warnings.push(`⚠️ <strong>Cảnh báo Tướng Bậc C Off-meta (\${cTierHeroes.map(h => h.name).join(', ')}):</strong> Các vị tướng này đang bị đánh giá thấp trong xếp hạng đơn, dễ bị đối phương ép rừng từ sớm.`);
+        warnings.push(`⚠️ <strong>Cảnh báo Tướng Bậc C Off-meta (${cTierHeroes.map(h => h.name).join(', ')}):</strong> Các vị tướng này đang bị đánh giá thấp trong xếp hạng đơn, dễ bị đối phương ép rừng từ sớm.`);
       }
 
       const hasAP = allyHeroes.some(h => h.dmg === 'AP' || h.dmg === 'MIX');
@@ -2139,7 +2156,7 @@
 
       const finalScore = Math.min(99, Math.max(35, baseScore + counterBonus));
       document.getElementById('tacticalScoreVal').textContent = finalScore;
-      document.getElementById('aiWarningsList').innerHTML = warnings.map(w => `<li>\${w}</li>`).join('');
+      document.getElementById('aiWarningsList').innerHTML = warnings.map(w => `<li>${w}</li>`).join('');
       document.getElementById('aiOperationTips').innerHTML = `
         • <strong>Đầu trận & Caesar Tiên Phong:</strong> Ưu tiên ăn Caesar đầu trận để lấy <strong>2 đợt Caesar tiên phong</strong> và hưởng cơ chế <em>chia sẻ vàng lính</em> cho toàn đội.<br/>
         • <strong>Trang bị & Phụ trợ khuyên dùng (Bản 29.09.2026):</strong> Xạ thủ nên lên <strong>Vô Ảnh Tiễn</strong> để có kích hoạt tàng hình 2.5s; Đỡ đòn/Trợ thủ lên <strong>Khiên Thánh Quang</strong> & <strong>Giáp Thống Khổ</strong> (Phản Pháo 25% sát thương chuẩn); Đấu sĩ/Pháp sư mang phụ trợ <strong>Ma Chủng Hắc Ám</strong> (-50% hồi chiêu) hoặc <strong>Dịch Chuyển</strong>.<br/>
@@ -2158,6 +2175,9 @@
       renderDraftBoard();
     }
 
+    // =====================================
+    // 3. RENDER TIER LIST V VÀ HIỆU ỨNG
+    // =====================================
     function setTierRoleFilter(role, btnEl) {
       draftState.tierRoleFilter = role;
       document.querySelectorAll('#tierRoleFilterGroup .filter-chip').forEach(b => b.classList.remove('active'));
@@ -2175,6 +2195,7 @@
         { key: 'C', css: 'C', sub: 'Off-Meta' }
       ];
       const container = document.getElementById('tierListContainer');
+      if(!container) return;
 
       container.innerHTML = tiers.map(t => {
         const list = FULL_ROVMETA_LIST[t.key].filter(h => {
@@ -2185,24 +2206,25 @@
 
         return `
           <div class="glass-panel tier-row">
-            <div class="tier-badge tier-\${t.css}">
-              \${t.key}
-              <span>\${t.sub}</span>
+            <div class="tier-badge tier-${t.css}">
+              ${t.key}
+              <span>${t.sub}</span>
             </div>
             <div class="tier-heroes">
-              \${list.length ? list.map(h => {
+              ${list.length ? list.map(h => {
                 const detailHero = HEROES.find(x => x.id === h.id);
                 const bgColor = detailHero ? detailHero.color : '#3d5a80';
                 const trendClass = h.trend === '▲' ? 'trend-up' : (h.trend === '▼' ? 'trend-down' : 'trend-adj');
+                const trendHTML = h.trend ? `<span class="trend-tag ${trendClass}">${h.trend}</span>` : '';
                 return `
-                  <div class="hero-card-mini" onclick="openHeroModalByName('\${h.name.replace(/'/g, "\\'")}', '\${h.role}', '\${t.key}', '\${h.trend || ''}')">
-                    \${h.trend ? `<span class="trend-tag \${trendClass}">\${h.trend}</span>` : ''}
-                    <div class="slot-hero-avatar" style="background:\${bgColor}; margin: 0 auto 6px;">\${h.name.slice(0,2)}</div>
-                    <div style="font-weight:bold; font-size:13px;">\${h.name}</div>
-                    <div style="font-size:11px; color:var(--text-muted);">\${h.role}</div>
+                  <div class="hero-card-mini" onclick="openHeroModalByName('${h.name.replace(/'/g, "\\'")}', '${h.role}', '${t.key}', '${h.trend || ''}')">
+                    ${trendHTML}
+                    <div class="slot-hero-avatar" style="background:${bgColor}; margin: 0 auto 6px;">${h.name.slice(0,2)}</div>
+                    <div style="font-weight:bold; font-size:13px;">${h.name}</div>
+                    <div style="font-size:11px; color:var(--text-muted);">${h.role}</div>
                   </div>
                 `;
-              }).join('') : `<span style="color:var(--text-muted); font-size:14px;">Không có tướng phù hợp ở bậc \${t.key}.</span>`}
+              }).join('') : `<span style="color:var(--text-muted); font-size:14px;">Không có tướng phù hợp ở bậc ${t.key}.</span>`}
             </div>
           </div>
         `;
@@ -2221,21 +2243,24 @@
       const dmg = hero ? hero.dmg : (role === 'Mage' || role === 'Support' ? 'AP' : 'AD');
       const cc = hero ? hero.cc : 'Theo bộ kỹ năng đặc trưng';
       const spike = hero ? hero.powerSpike : 'Giữa & Cuối trận';
-      const desc = hero ? hero.skillDesc : `Vị tướng vai trò \${role} xếp hạng Bậc \${tier} trên bảng xếp hạng ROVMETA.`;
+      const desc = hero ? hero.skillDesc : `Vị tướng vai trò ${role} xếp hạng Bậc ${tier} trên bảng xếp hạng ROVMETA.`;
+      
+      const trendHTML = trend ? `• XU HƯỚNG ${trend}` : '';
+      const buttonHTML = hero ? `<button class="btn-gold" onclick="closeHeroModal(); switchPage('draft'); assignHeroToActiveSlot('${hero.id}');">⚔️ ĐƯA VÀO PHÒNG CẤM CHỌN</button>` : '';
 
       document.getElementById('heroModalBody').innerHTML = `
         <div style="display:flex; align-items:center; gap:16px; margin-bottom:18px;">
-          <div class="slot-hero-avatar" style="width:68px; height:68px; font-size:24px; background:\${bgColor};">\${name.slice(0,2)}</div>
+          <div class="slot-hero-avatar" style="width:68px; height:68px; font-size:24px; background:${bgColor};">${name.slice(0,2)}</div>
           <div>
-            <span class="badge-patch">TIER \${tier} \${trend ? '• XU HƯỚNG ' + trend : ''} • \${role.toUpperCase()}</span>
-            <h2 style="font-size:32px;">\${name}</h2>
+            <span class="badge-patch">TIER ${tier} ${trendHTML} • ${role.toUpperCase()}</span>
+            <h2 style="font-size:32px;">${name}</h2>
           </div>
         </div>
-        <p style="margin-bottom:12px;"><strong>📍 Vai trò chuẩn ROVMETA:</strong> \${role} | <strong>Loại sát thương:</strong> \${dmg}</p>
-        <p style="margin-bottom:12px;"><strong>⚡ Hiệu ứng & Cơ chế:</strong> \${cc} | <strong>Ngưỡng sức mạnh:</strong> <span style="color:var(--accent-gold);">\${spike}</span></p>
-        <p style="margin-bottom:18px; color:var(--text-muted);"><strong>📖 Phân tích Meta:</strong> \${desc}</p>
+        <p style="margin-bottom:12px;"><strong>📍 Vai trò chuẩn ROVMETA:</strong> ${role} | <strong>Loại sát thương:</strong> ${dmg}</p>
+        <p style="margin-bottom:12px;"><strong>⚡ Hiệu ứng & Cơ chế:</strong> ${cc} | <strong>Ngưỡng sức mạnh:</strong> <span style="color:var(--accent-gold);">${spike}</span></p>
+        <p style="margin-bottom:18px; color:var(--text-muted);"><strong>📖 Phân tích Meta:</strong> ${desc}</p>
         <div style="display:flex; gap:12px; flex-wrap:wrap;">
-          \${hero ? `<button class="btn-gold" onclick="closeHeroModal(); switchPage('draft'); assignHeroToActiveSlot('\${hero.id}');">⚔️ ĐƯA VÀO PHÒNG CẤM CHỌN</button>` : ''}
+          ${buttonHTML}
           <button class="btn-outline" onclick="closeHeroModal(); switchPage('effects');">⚡ TRA CỨU TỪ ĐIỂN HIỆU ỨNG</button>
         </div>
       `;
@@ -2246,7 +2271,6 @@
       document.getElementById('heroModal').classList.remove('open');
     }
 
-    // 8. CƠ SỞ DỮ LIỆU TỪ ĐIỂN HIỆU ỨNG
     const EFFECTS_DATA = {
       buff: [
         {
@@ -2297,209 +2321,4 @@
           icon: '✨',
           name: 'Miễn Nhiễm Sát Thương (Damage Immunity)',
           desc: 'Không phải nhận sát thương (hoặc miễn nhiễm một loại sát thương nhất định), vẫn có thể di chuyển bình thường nhưng vẫn phải nhận khống chế.',
-          examples: 'Chiêu 2 của Joker (Stuart) miễn sát thương vật lý',
-          tags: [
-            { text: 'Miễn loại sát thương chỉ định', type: 'tag-yes' },
-            { text: 'Có thể di chuyển', type: 'tag-yes' },
-            { text: 'Vẫn dính khống chế', type: 'tag-no' }
-          ]
-        }
-      ],
-      soft_cc: [
-        {
-          icon: '🐌',
-          name: 'Làm Chậm (Slow - Khống chế mềm)',
-          desc: 'Làm giảm tốc độ di chuyển hoặc tốc độ đánh của mục tiêu. Chỉ số Kháng hiệu ứng sẽ làm giảm hiệu quả của Làm chậm và có thể hóa giải.',
-          examples: 'Chiêu 1 Mganga (giảm tốc chạy), Nội tại Khiên Thất Truyền (giảm tốc chạy & tốc đánh)',
-          tags: [
-            { text: 'Kháng hiệu ứng: Có giảm', type: 'tag-yes' },
-            { text: 'Giải trừ: Giải được', type: 'tag-yes' },
-            { text: 'Giảm tốc chạy / tốc đánh', type: 'tag-special' }
-          ]
-        },
-        {
-          icon: '🤫',
-          name: 'Câm Lặng (Silence - Khống chế mềm)',
-          desc: 'Không thể đánh thường, không thể sử dụng chiêu thức và phép bổ trợ, nhưng mục tiêu vẫn có thể di chuyển bình thường.',
-          examples: 'Chiêu 2 của Paine, Chiêu cuối của Alice',
-          tags: [
-            { text: 'Kháng hiệu ứng: Có giảm', type: 'tag-yes' },
-            { text: 'Giải trừ: Giải được', type: 'tag-yes' },
-            { text: 'Vẫn di chuyển được', type: 'tag-special' }
-          ]
-        }
-      ],
-      hard_cc: [
-        {
-          icon: '💫',
-          name: 'Làm Choáng (Stun - Khống chế cứng)',
-          desc: 'Trạng thái khóa hoàn toàn: không thể di chuyển, không thể đánh thường, không thể sử dụng chiêu thức và phép bổ trợ.',
-          examples: 'Chiêu 2 của Veera',
-          tags: [
-            { text: 'Kháng hiệu ứng: Có giảm', type: 'tag-yes' },
-            { text: 'Giải trừ: Giải được', type: 'tag-yes' },
-            { text: 'Khóa mọi thao tác', type: 'tag-no' }
-          ]
-        },
-        {
-          icon: '🌪️',
-          name: 'Hất Tung (Knockup - Khống chế cứng)',
-          desc: 'Không thể di chuyển, đánh thường, tung chiêu hay dùng phép bổ trợ. Đa số bị giảm bởi Kháng hiệu ứng, nhưng có ngoại lệ không bị ảnh hưởng bởi Kháng hiệu ứng.',
-          examples: 'Chiêu 2 của Thane, Chiêu cuối của Lorion (không bị giảm bởi kháng hiệu ứng)',
-          tags: [
-            { text: 'Kháng hiệu ứng: Tùy chiêu thức', type: 'tag-special' },
-            { text: 'Giải trừ: Giải được', type: 'tag-yes' },
-            { text: 'Khóa mọi thao tác', type: 'tag-no' }
-          ]
-        },
-        {
-          icon: '🕸️',
-          name: 'Trói Chân (Root - Khống chế cứng)',
-          desc: 'Không thể di chuyển và không dùng được Tốc Biến / Tốc Hành, nhưng vẫn có thể đánh thường, tung chiêu thức và dùng các phép bổ trợ khác.',
-          examples: 'Chiêu 2 của Bonnie',
-          tags: [
-            { text: 'Kháng hiệu ứng: Có giảm', type: 'tag-yes' },
-            { text: 'Giải trừ: Giải được', type: 'tag-yes' },
-            { text: 'Vẫn đánh & tung chiêu được', type: 'tag-special' }
-          ]
-        },
-        {
-          icon: '🧲',
-          name: 'Đẩy Lùi & Kéo Về (Knockback / Pull)',
-          desc: 'Kéo hoặc đẩy lùi mục tiêu khiến đối phương không thể đánh thường, dùng chiêu hay phép bổ trợ. Đặc biệt: Kháng hiệu ứng KHÔNG có tác dụng.',
-          examples: 'Chiêu 1 của Thane (Đẩy lùi), Chiêu 2 của Grakk & Chiêu 2 của Mina (Kéo về)',
-          tags: [
-            { text: 'Kháng hiệu ứng: Vô tác dụng', type: 'tag-no' },
-            { text: 'Giải trừ: Giải được', type: 'tag-yes' },
-            { text: 'Cưỡng chế vị trí', type: 'tag-special' }
-          ]
-        },
-        {
-          icon: '😡',
-          name: 'Khiêu Khích (Taunt - Khống chế cứng)',
-          desc: 'Ép buộc mục tiêu bị khiêu khích phải đánh thường vào người tung hiệu ứng, đồng thời khóa kỹ năng và phép bổ trợ.',
-          examples: 'Chiêu cuối của Mina',
-          tags: [
-            { text: 'Kháng hiệu ứng: Có giảm', type: 'tag-yes' },
-            { text: 'Giải trừ: Giải được', type: 'tag-yes' },
-            { text: 'Ép đánh thường', type: 'tag-no' }
-          ]
-        }
-      ],
-      suppress: [
-        {
-          icon: '⛓️',
-          name: 'Áp Chế (Suppress - Khống chế mạnh nhất)',
-          desc: 'Mục tiêu hoàn toàn không thể di chuyển, đánh thường, tung chiêu hay dùng phép bổ trợ. Kháng hiệu ứng vô tác dụng và không thể tự giải trừ.',
-          examples: 'Chiêu cuối của Arum, Chiêu cuối của Aleister (Chỉ có Zip và Rouie mới giải cứu đồng đội được)',
-          tags: [
-            { text: 'Kháng hiệu ứng: Vô tác dụng', type: 'tag-no' },
-            { text: 'Giải trừ: Không thể giải', type: 'tag-no' },
-            { text: 'Khắc chế: Zip & Rouie', type: 'tag-special' }
-          ]
-        }
-      ],
-      unique: [
-        {
-          icon: '🐿️',
-          name: 'Biến Hình (Polymorph)',
-          desc: 'Hiệu ứng riêng biệt từ chiêu cuối của Aya, có cơ chế hoạt động tương tự như trạng thái Câm lặng.',
-          examples: 'Chiêu cuối của Aya',
-          tags: [
-            { text: 'Tương tự: Câm lặng', type: 'tag-special' },
-            { text: 'Giải trừ: Giải được', type: 'tag-yes' }
-          ]
-        },
-        {
-          icon: '🔄',
-          name: 'Hất Ngược (Fling / Flip)',
-          desc: 'Hiệu ứng riêng biệt hất văng mục tiêu ra phía sau lưng, có cơ chế tương tự như trạng thái Đẩy lùi / Kéo về.',
-          examples: 'Chiêu 1 của Baldum, Chiêu 2 của Enzo',
-          tags: [
-            { text: 'Tương tự: Đẩy lùi / Kéo về', type: 'tag-special' },
-            { text: 'Kháng hiệu ứng: Vô tác dụng', type: 'tag-no' }
-          ]
-        },
-        {
-          icon: '🧊',
-          name: 'Đóng Băng & Hóa Đá (Freeze / Petrify)',
-          desc: 'Hai hiệu ứng khống chế riêng biệt có cơ chế khóa toàn bộ hành động tương tự như trạng thái Làm choáng.',
-          examples: "Chiêu 2 của Điêu Thuyền (Đóng băng), Nội tại của Azzen'Ka (Hóa đá)",
-          tags: [
-            { text: 'Tương tự: Làm choáng', type: 'tag-special' },
-            { text: 'Giải trừ: Giải được', type: 'tag-yes' }
-          ]
-        },
-        {
-          icon: '💨',
-          name: 'Hất Văng (Knock Away)',
-          desc: 'Hiệu ứng đánh bật mục tiêu ra xa có cơ chế tương tự như trạng thái Hất tung.',
-          examples: 'Chiêu cuối của Skud, Chiêu cuối của Annette',
-          tags: [
-            { text: 'Tương tự: Hất tung', type: 'tag-special' },
-            { text: 'Giải trừ: Giải được', type: 'tag-yes' }
-          ]
-        },
-        {
-          icon: '🕳️',
-          name: 'Giam Cầm (Imprison)',
-          desc: 'Chôn vùi mục tiêu xuống lòng đất, có cơ chế hoạt động tương tự như trạng thái Áp chế.',
-          examples: 'Chiêu cuối Địa Giam của Baldum',
-          tags: [
-            { text: 'Tương tự: Áp chế', type: 'tag-special' },
-            { text: 'Không thể giải trừ', type: 'tag-no' }
-          ]
-        },
-        {
-          icon: '🗡️',
-          name: 'Xích (Tether / Sát Vực)',
-          desc: 'Tương tự như Áp chế ở điểm không thể hóa giải thoát ra, nhưng người bị xích vẫn có thể di chuyển trong phạm vi, tấn công và dùng phép bổ trợ.',
-          examples: 'Chiêu cuối Sát Vực của Omen',
-          tags: [
-            { text: 'Tương tự: Áp chế (Không giải được)', type: 'tag-no' },
-            { text: 'Vẫn di chuyển, đánh & dùng phụ trợ được', type: 'tag-yes' }
-          ]
-        }
-      ]
-    };
-
-    function switchEffectTab(tabKey) {
-      ['buff', 'soft_cc', 'hard_cc', 'suppress', 'unique'].forEach(k => {
-        const btn = document.getElementById('tabBtn-' + k);
-        if (btn) btn.className = k === tabKey ? 'btn-gold' : 'btn-outline';
-      });
-
-      const container = document.getElementById('effectsGridContainer');
-      container.innerHTML = EFFECTS_DATA[tabKey].map(item => `
-        <div class="glass-panel effect-card">
-          <div class="effect-icon">\${item.icon}</div>
-          <div style="flex: 1;">
-            <h4 style="font-size:20px; color:var(--accent-gold); margin-bottom:6px;">\${item.name}</h4>
-            <p style="font-size:14px; color:var(--text-muted); margin-bottom:8px;">\${item.desc}</p>
-            <p style="font-size:13px; color:var(--text-primary);"><strong>🎯 Ví dụ tiêu biểu:</strong> \${item.examples}</p>
-            <div class="effect-tags">
-              \${item.tags.map(t => `<span class="meta-tag \${t.type}">\${t.text}</span>`).join('')}
-            </div>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    // KHI TẢI TRANG, HIỂN THỊ ĐÚNG TRANG CHỦ VÀ ẨN CÁC TRANG CÒN LẠI
-    window.addEventListener('DOMContentLoaded', () => {
-      document.querySelectorAll('.page-section').forEach(sec => {
-        sec.style.display = 'none';
-      });
-      const homeSec = document.getElementById('page-home');
-      if (homeSec) {
-        homeSec.style.display = 'block';
-        homeSec.classList.add('active');
-      }
-      
-      renderDraftBoard();
-      renderTierList();
-      switchEffectTab('buff');
-    });
-  </script>
-</body>
-</html>
+          examples: 'Chiêu 2 của Joker (Stuart) miễn sát thương vật lý
